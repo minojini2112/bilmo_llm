@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Shopping Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            height: 90vh;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .mode-selector {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .mode-button {
+            padding: 6px 16px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .mode-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .mode-button.active {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            border-color: white;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.assistant .message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 4px;
+            white-space: pre-wrap;
+        }
+
+        .message.assistant .message-content pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 12px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-field:focus {
+            border-color: #667eea;
+        }
+
+        .send-button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .send-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .finalize-button {
+            margin-top: 10px;
+            padding: 8px 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .finalize-button:hover {
+            background: #218838;
+        }
+
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .welcome-message {
+            text-align: center;
+            color: #666;
+            padding: 40px 20px;
+        }
+
+        .welcome-message h2 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .welcome-message p {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛒 AI Shopping Assistant</h1>
+            <p>Ask me anything about products you need!</p>
+            <div class="mode-selector">
+                <button class="mode-button active" data-mode="default" onclick="selectMode('default')">
+                    🛍️ Default
+                </button>
+                <button class="mode-button" data-mode="health" onclick="selectMode('health')">
+                    🥗 Health
+                </button>
+                <button class="mode-button" data-mode="budget" onclick="selectMode('budget')">
+                    💰 Budget
+                </button>
+            </div>
+        </div>
+        
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome-message">
+                <h2>Welcome! 👋</h2>
+                <p>I'm your AI shopping assistant.</p>
+                <p>Tell me what you're looking for and I'll help you find it!</p>
+                <p style="margin-top: 20px; font-size: 12px; color: #999;">Example: "I want a protein rich breakfast"</p>
+            </div>
+        </div>
+        
+        <div class="input-container">
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+                <input 
+                    type="text" 
+                    class="input-field" 
+                    id="messageInput" 
+                    placeholder="Type your message here..."
+                    onkeypress="handleKeyPress(event)"
+                >
+                <button class="finalize-button" id="finalizeButton" onclick="finalizeConversation()" style="display: none;">
+                    📋 Finalize & Get JSON
+                </button>
+            </div>
+            <button class="send-button" id="sendButton" onclick="sendMessage()">
+                Send
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8000';
+        const chatContainer = document.getElementById('chatContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        
+        let conversationHistory = [];
+        let currentMode = 'default';
+
+        function selectMode(mode) {
+            currentMode = mode;
+            // Update button states
+            document.querySelectorAll('.mode-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+            
+            // Clear conversation when mode changes (optional - you can remove this if you want to keep history)
+            // conversationHistory = [];
+            // chatContainer.innerHTML = '<div class="welcome-message"><h2>Welcome! 👋</h2><p>Mode changed to ' + mode + '</p></div>';
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function addMessage(role, content) {
+            // Remove welcome message if it exists
+            const welcomeMsg = chatContainer.querySelector('.welcome-message');
+            if (welcomeMsg) {
+                welcomeMsg.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            // Check if content is JSON and format it
+            if (role === 'assistant' && content.trim().startsWith('{')) {
+                try {
+                    const jsonObj = JSON.parse(content);
+                    contentDiv.innerHTML = `<pre>${JSON.stringify(jsonObj, null, 2)}</pre>`;
+                } catch (e) {
+                    contentDiv.textContent = content;
+                }
+            } else {
+                contentDiv.textContent = content;
+            }
+            
+            messageDiv.appendChild(contentDiv);
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function showLoading() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message assistant';
+            loadingDiv.id = 'loadingMessage';
+            loadingDiv.innerHTML = '<div class="message-content"><div class="loading"></div> Thinking...</div>';
+            chatContainer.appendChild(loadingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function removeLoading() {
+            const loadingMsg = document.getElementById('loadingMessage');
+            if (loadingMsg) {
+                loadingMsg.remove();
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = `Error: ${message}`;
+            chatContainer.appendChild(errorDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // Add user message to UI
+            addMessage('user', message);
+            conversationHistory.push({ role: 'user', content: message });
+            
+            // Clear input
+            messageInput.value = '';
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+            sendButton.innerHTML = '<div class="loading"></div>';
+
+            // Show loading indicator
+            showLoading();
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        messages: conversationHistory,
+                        mode: currentMode
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                removeLoading();
+                
+                if (data.assistant) {
+                    addMessage('assistant', data.assistant);
+                    conversationHistory.push({ role: 'assistant', content: data.assistant });
+                    
+                    // Show finalize button after first exchange
+                    if (conversationHistory.length >= 2) {
+                        document.getElementById('finalizeButton').style.display = 'block';
+                    }
+                } else {
+                    showError('No response from assistant');
+                }
+            } catch (error) {
+                removeLoading();
+                showError(error.message || 'Failed to get response from server. Make sure the backend is running on http://127.0.0.1:8000');
+                console.error('Error:', error);
+            } finally {
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send';
+                messageInput.focus();
+            }
+        }
+
+        async function finalizeConversation() {
+            if (conversationHistory.length === 0) {
+                showError('No conversation to finalize');
+                return;
+            }
+
+            const finalizeButton = document.getElementById('finalizeButton');
+            sendButton.disabled = true;
+            finalizeButton.disabled = true;
+            showLoading();
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/finalize`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        messages: conversationHistory,
+                        mode: currentMode
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                removeLoading();
+                
+                if (data.success) {
+                    addMessage('assistant', JSON.stringify(data.data, null, 2));
+                } else {
+                    showError(data.data?.error || 'Failed to finalize conversation');
+                    if (data.data?.raw_output) {
+                        addMessage('assistant', data.data.raw_output);
+                    }
+                }
+            } catch (error) {
+                removeLoading();
+                showError(error.message || 'Failed to finalize conversation');
+                console.error('Error:', error);
+            } finally {
+                sendButton.disabled = false;
+                finalizeButton.disabled = false;
+            }
+        }
+
+        // Focus input on load
+        messageInput.focus();
+    </script>
+</body>
+</html>
+
