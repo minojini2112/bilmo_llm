@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -6,16 +7,25 @@ from llm_client import ask_llm
 from extractor import extract_and_validate
 from prompts import PROMPT_MAP, SYSTEM_DEFAULT_MODE
 
-app = FastAPI()
+app = FastAPI(title="Bilmo LLM API", version="1.0.0")
 
-# Enable CORS for frontend
+# Configure CORS - allow specific origins in production via ALLOWED_ORIGINS env var
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+async def root():
+    return {"status": "ok", "message": "Bilmo LLM API is running"}
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
 
 class Message(BaseModel):
     role: str
