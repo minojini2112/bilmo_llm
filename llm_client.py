@@ -4,9 +4,21 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def _get_hf_token() -> str:
+    """Fetch and sanitize HF token to avoid malformed Authorization headers."""
+    token = os.environ.get("HF_TOKEN", "").strip()
+    # Some dashboards prepend "HF_TOKEN="; strip it if present
+    if token.lower().startswith("hf_token="):
+        token = token.split("=", 1)[1].strip()
+    if not token:
+        raise ValueError("HF_TOKEN environment variable is missing or empty.")
+    return token
+
+
 client = OpenAI(
     base_url="https://router.huggingface.co/v1",
-    api_key=os.environ.get("HF_TOKEN"),
+    api_key=_get_hf_token(),
 )
 
 def ask_llm(messages, temperature=0.0, max_tokens=2048):
